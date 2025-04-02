@@ -5,6 +5,7 @@ import { resolve } from 'path'
 // https://vitejs.dev/config/
 export default defineConfig({
   plugins: [react()],
+  base: './',
   server: {
     port: 5173,
     host: true,
@@ -22,7 +23,6 @@ export default defineConfig({
     strictPort: false,
     open: true
   },
-  base: '',
   publicDir: 'public',
   resolve: {
     alias: {
@@ -47,24 +47,9 @@ export default defineConfig({
             return 'vendor';
           }
         },
-        assetFileNames: (assetInfo) => {
-          const fileName = assetInfo.name;
-          if (!fileName) return 'assets/[name]-[hash][extname]';
-
-          const extType = fileName.split('.').pop();
-          
-          if (/\.(png|jpe?g|svg|gif|webp)$/i.test(fileName)) {
-            return 'assets/images/[name]-[hash][extname]';
-          }
-          if (/\.(mp3|wav|ogg)$/i.test(fileName)) {
-            return 'assets/audio/[name]-[hash][extname]';
-          }
-          if (/\.(woff2?|eot|ttf|otf)$/i.test(fileName)) {
-            return 'assets/fonts/[name]-[hash][extname]';
-          }
-          
-          return 'assets/[name]-[hash][extname]';
-        }
+        assetFileNames: 'assets/[name][extname]',
+        chunkFileNames: 'assets/[name].js',
+        entryFileNames: 'assets/[name].js'
       },
     },
   }
