@@ -1,109 +1,108 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useGameState } from '../contexts/GameStateContext';
+import theme from '../styles/theme';
 
+// 正常的背景容器，移除调试边框
 const BackgroundContainer = styled.div`
     position: absolute;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    z-index: ${({ theme }) => theme.zIndex.background};
-    transition: opacity ${({ theme }) => theme.transitions.normal};
-    opacity: ${({ $isLoading }) => ($isLoading ? 0 : 1)};
+    z-index: ${theme.zIndex.background};
+    background-color: #000;
+    overflow: hidden;
 `;
 
-const BackgroundImage = styled.div`
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: url(${({ $image }) => $image});
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-color: ${({ $color, theme }) => $color || theme.colors.background};
-    transition: opacity ${({ theme }) => theme.transitions.normal};
-    opacity: ${({ $isActive }) => ($isActive ? 1 : 0)};
-`;
-
+// 位置文本
 const LocationText = styled.div`
     position: absolute;
-    top: ${({ theme }) => theme.spacing.large};
-    left: ${({ theme }) => theme.spacing.large};
-    padding: ${({ theme }) => theme.spacing.small} ${({ theme }) => theme.spacing.medium};
+    top: ${theme.spacing.large};
+    left: ${theme.spacing.large};
+    padding: ${theme.spacing.small} ${theme.spacing.medium};
     background: rgba(0, 0, 0, 0.7);
-    color: ${({ theme }) => theme.colors.text};
-    border-radius: ${({ theme }) => theme.borderRadius.medium};
-    font-family: ${({ theme }) => theme.fonts.pixel};
+    color: ${theme.colors.text};
+    border-radius: ${theme.borderRadius.medium};
+    font-family: ${theme.fonts.system};
     opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
-    transform: translateY(${({ $isVisible }) => ($isVisible ? '0' : '-20px')});
-    transition: all ${({ theme }) => theme.transitions.normal};
+    transition: all ${theme.transitions.normal};
+    z-index: 2;
 `;
 
 const BackgroundDisplay = () => {
-    const { currentScene } = useGameState();
-    const [isLoading, setIsLoading] = useState(true);
+    const { currentNode } = useGameState();
     const [showLocation, setShowLocation] = useState(false);
-    const [currentBackground, setCurrentBackground] = useState(null);
-    const [nextBackground, setNextBackground] = useState(null);
-
+    const [imgSrc, setImgSrc] = useState('');
+    const [imgError, setImgError] = useState(false);
+    const [imgLoaded, setImgLoaded] = useState(false);
+    
     useEffect(() => {
-        if (!currentScene?.background) return;
-
-        setIsLoading(true);
-        setShowLocation(false);
-
-        // 预加载背景图片
-        const img = new Image();
-        img.src = currentScene.background.image;
-
-        img.onload = () => {
-            setNextBackground(currentScene.background);
-            setIsLoading(false);
-
-            // 显示位置文本
-            setTimeout(() => {
-                setShowLocation(true);
-            }, 500);
-
-            // 切换背景
-            setTimeout(() => {
-                setCurrentBackground(currentScene.background);
-                setNextBackground(null);
-            }, 100);
-        };
-
-        img.onerror = () => {
-            console.error('Failed to load background image:', currentScene.background.image);
-            setIsLoading(false);
-            setCurrentBackground({
-                ...currentScene.background,
-                image: null
-            });
-        };
-    }, [currentScene]);
+        if (currentNode) {
+            setShowLocation(false);
+            setTimeout(() => setShowLocation(true), 500);
+            
+            // 重置图片状态
+            setImgError(false);
+            setImgLoaded(false);
+            
+            if (currentNode.backgroundImage) {
+                const path = currentNode.backgroundImage;
+                setImgSrc(path);
+            } else {
+                setImgSrc('');
+            }
+        }
+    }, [currentNode]);
+    
+    if (!currentNode) {
+        return <BackgroundContainer />;
+    }
 
     return (
-        <BackgroundContainer $isLoading={isLoading}>
-            {currentBackground && (
-                <BackgroundImage
-                    $image={currentBackground.image}
-                    $color={currentBackground.color}
-                    $isActive={true}
+        <BackgroundContainer>
+            {imgSrc && !imgError && (
+                <img 
+                    src={imgSrc}
+                    alt="背景"
+                    style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        zIndex: 1,
+                        opacity: 1
+                    }}
+                    onLoad={(e) => {
+                        setImgLoaded(true);
+                    }}
+                    onError={(e) => {
+                        // 尝试不同的路径格式
+                        if (!imgSrc.startsWith('/')) {
+                            const newPath = '/' + imgSrc;
+                            e.target.src = newPath;
+                            e.target.onerror = () => {
+                                // 最后尝试直接使用文件名
+                                const parts = imgSrc.split('/');
+                                const fileName = parts[parts.length - 1];
+                                const finalPath = '/images/backgrounds/' + fileName;
+                                e.target.src = finalPath;
+                                e.target.onerror = () => {
+                                    setImgError(true);
+                                };
+                            };
+                        } else {
+                            setImgError(true);
+                        }
+                    }}
                 />
             )}
-            {nextBackground && (
-                <BackgroundImage
-                    $image={nextBackground.image}
-                    $color={nextBackground.color}
-                    $isActive={false}
-                />
-            )}
-            {currentBackground?.location && (
+            
+            {currentNode.location && (
                 <LocationText $isVisible={showLocation}>
-                    {currentBackground.location}
+                    {currentNode.location}
                 </LocationText>
             )}
         </BackgroundContainer>

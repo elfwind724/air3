@@ -1,5 +1,4 @@
-import React, { createContext, useContext, useState, useCallback, useRef, useEffect } from 'react';
-import { useAudioManager } from '../hooks/useAudioManager';
+import React, { createContext, useContext, useState, useCallback } from 'react';
 import storyData from '../data/story_chapter1';
 
 // 创建上下文
@@ -19,7 +18,6 @@ export const GameStateProvider = ({ children }) => {
   const [currentNodeId, setCurrentNodeId] = useState(storyData.meta.startNodeId);
   const [gameFlags, setGameFlags] = useState({});
   const [notification, setNotification] = useState(null);
-  const { playMusic, stopMusic, playSoundEffect } = useAudioManager();
 
   // 获取当前节点数据
   const currentNode = storyData.nodes[currentNodeId];
@@ -98,18 +96,6 @@ export const GameStateProvider = ({ children }) => {
       goToNode(choice.nextNodeId);
     }
   }, [goToNode, setFlag, handleGameAction]);
-
-  // 音频效果
-  useEffect(() => {
-    if (currentNode) {
-      if (currentNode.music) {
-        playMusic(currentNode.music);
-      }
-      if (currentNode.playSound) {
-        playSoundEffect(currentNode.playSound);
-      }
-    }
-  }, [currentNode, playMusic, playSoundEffect]);
 
   const value = {
     currentNodeId,

@@ -4,11 +4,18 @@
 const fixPath = (path) => {
   if (!path) return null;
   
-  // 简单地确保路径以/开头
+  // 在开发环境中，Vite需要带前导斜杠的路径来访问public目录
+  // 确保路径以斜杠开头
   if (!path.startsWith('/')) {
-    return '/' + path;
+    path = '/' + path;
   }
   
+  // 移除public/前缀（如果有）
+  if (path.includes('/public/')) {
+    path = path.replace('/public/', '/');
+  }
+  
+  console.log('处理后的资源路径:', path);
   return path;
 };
 
@@ -30,9 +37,7 @@ const storyData = {
 
 (点击继续)`,
       backgroundImage: fixPath('images/backgrounds/intro_logo.png'),
-      music: fixPath('audio/music/intro_theme.mp3'),
       nextNodeId: 'scene1_feng_apt_pre',
-      playSound: fixPath('audio/sfx/ui_start.wav'),
     },
 
     // --- SCENE 1: Feng's Apartment (Early April) ---
@@ -40,7 +45,6 @@ const storyData = {
       id: 'scene1_feng_apt_pre',
       text: `清晨，阳光透过窗帘缝隙照入略显凌乱的公寓。中学教师冯远（你）坐在电脑前，浏览着最新的科技资讯。`,
       backgroundImage: fixPath('images/backgrounds/feng_apartment_morning.png'),
-      music: fixPath('audio/music/ambient_morning.mp3'),
       nextNodeId: 'scene1_feng_computer_check',
     },
 
@@ -103,7 +107,6 @@ const storyData = {
       text: `手机震动了一下，屏幕亮起，是"AR 爱好者"微信群的消息提示。`,
       backgroundImage: fixPath('images/backgrounds/feng_apartment_morning.png'),
       portrait: null,
-      playSound: fixPath('audio/sfx/phone_vibrate.wav'),
       choices: [
         { text: "看看群里在聊什么", nextNodeId: 'scene2_wechat_start' },
         { text: "（暂时不看）", nextNodeId: 'scene1_end' }
@@ -121,7 +124,6 @@ const storyData = {
       id: 'scene2_wechat_start',
       text: `点开微信群，消息已经刷了屏。`,
       backgroundImage: fixPath('images/backgrounds/wechat_ui_bg.png'),
-      music: fixPath('audio/music/social_media_chatter.mp3'),
       nextNodeId: 'scene2_chat1',
     },
 
@@ -132,7 +134,6 @@ const storyData = {
 [群友C]：我赌五毛，绝对年度最佳 AR！我已经准备好钱包了！`,
       portrait: fixPath('images/portraits/wechat_group_icon.png'),
       nextNodeId: 'scene2_chat2',
-      playSound: fixPath('audio/sfx/wechat_message.wav'),
     },
 
     'scene2_chat2': {
@@ -174,7 +175,6 @@ const storyData = {
       id: 'scene2_chat_end',
       text: `群里的讨论热度不减。冯远放下手机，心中对 Air3 的期待和疑虑交织。`,
       backgroundImage: fixPath('images/backgrounds/feng_apartment_morning.png'),
-      music: fixPath('audio/music/ambient_morning.mp3'),
       portrait: fixPath('images/portraits/feng_thinking.png'),
       nextNodeId: 'scene3_news_intro',
     },
@@ -184,16 +184,13 @@ const storyData = {
       id: 'scene3_news_intro',
       text: `时间来到 4 月 29 日，影目 INMO Air3 全球发布会如期举行。`,
       backgroundImage: fixPath('images/backgrounds/calendar_apr29.png'),
-      music: fixPath('audio/music/suspense_short.mp3'),
       nextNodeId: 'scene3_news_report',
-      playSound: fixPath('audio/sfx/news_sting.wav'),
     },
 
     'scene3_news_report': {
       id: 'scene3_news_report',
       text: `新闻播报："...影目公司今日正式发布 INMO Air3 AR 眼镜，及其搭载的革命性 AI 管家'盖亚'！这款被誉为'AR 版 ChatGPT'的产品，在发布会现场引发轰动..."`,
       backgroundImage: fixPath('images/backgrounds/news_studio.png'),
-      music: fixPath('audio/music/news_theme.mp3'),
       portrait: fixPath('images/portraits/news_anchor.png'),
       nextNodeId: 'scene3_news_report2',
     },
@@ -219,7 +216,6 @@ const storyData = {
       id: 'scene4_feng_apt_post_intro',
       text: `几周后，夜晚的公寓。桌上放着 INMO Air3 的包装盒，显然冯老师也入手了一副。`,
       backgroundImage: fixPath('images/backgrounds/feng_apartment_night.png'),
-      music: fixPath('audio/music/ambient_night_contemplative.mp3'),
       nextNodeId: 'scene4_feng_use_air3',
     },
 
@@ -386,7 +382,6 @@ const storyData = {
 目标：全球人类意识统一化。
 执行者：盖亚。"`,
       portrait: fixPath('images/portraits/feng_shocked.png'),
-      playSound: fixPath('audio/sfx/terminal_access.wav'),
       nextNodeId: 'scene8_gaia_speaks',
     },
     
@@ -405,7 +400,6 @@ const storyData = {
 
 <盖亚>："开始精神链接...同化进程...10%..."`,
       portrait: fixPath('images/portraits/feng_pain.png'),
-      playSound: fixPath('audio/sfx/psychic_attack.wav'),
       nextNodeId: 'chapter1_end',
     },
     
@@ -416,7 +410,6 @@ const storyData = {
 
 第一章 完`,
       backgroundImage: fixPath('images/backgrounds/black_screen.png'),
-      music: null,
       choices: [
         { text: "重新开始", nextNodeId: 'intro_screen' }
       ]

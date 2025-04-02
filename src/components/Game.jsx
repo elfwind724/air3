@@ -1,35 +1,85 @@
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react';
+import styled from 'styled-components';
+import { GameStateProvider } from '../contexts/GameStateContext';
+import BackgroundDisplay from './BackgroundDisplay';
+import StoryDisplay from './StoryDisplay';
+import ChoiceDisplay from './ChoiceDisplay';
+import SettingsMenu from './SettingsMenu';
+import LoadingScreen from './LoadingScreen';
+import NotificationUI from './NotificationUI';
 
-export default function Game() {
-  const [gameState, setGameState] = useState({
-    started: false,
-    score: 0
-  })
+const GameContainer = styled.div`
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    overflow: hidden;
+    background-color: #000;
+`;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="bg-gray-800 p-8 rounded-lg shadow-lg max-w-md w-full">
-        <h1 className="text-3xl font-bold text-center mb-6">My Game</h1>
+const SettingsButton = styled.button`
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: transparent;
+    color: white;
+    border: 1px solid white;
+    border-radius: 4px;
+    padding: 8px 12px;
+    cursor: pointer;
+    z-index: 100;
+    
+    &:hover {
+        background: rgba(255, 255, 255, 0.2);
+    }
+`;
+
+const Game = () => {
+    const [isLoading, setIsLoading] = useState(true);
+    const [loadingProgress, setLoadingProgress] = useState(0);
+    const [showSettings, setShowSettings] = useState(false);
+    
+    useEffect(() => {
+        // 模拟资源加载完成
+        const timer = setTimeout(() => {
+            setIsLoading(false);
+        }, 1000);
         
-        {!gameState.started ? (
-          <button
-            onClick={() => setGameState(prev => ({ ...prev, started: true }))}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded transition-colors"
-          >
-            Start Game
-          </button>
-        ) : (
-          <div className="space-y-4">
-            <p className="text-xl text-center">Score: {gameState.score}</p>
-            <button
-              onClick={() => setGameState({ started: false, score: 0 })}
-              className="w-full bg-red-500 hover:bg-red-600 text-white font-bold py-2 px-4 rounded transition-colors"
-            >
-              End Game
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  )
-} 
+        // 模拟加载进度
+        let progress = 0;
+        const interval = setInterval(() => {
+            progress += 10;
+            if (progress > 100) {
+                clearInterval(interval);
+            } else {
+                setLoadingProgress(progress);
+            }
+        }, 100);
+        
+        return () => {
+            clearTimeout(timer);
+            clearInterval(interval);
+        };
+    }, []);
+
+    const toggleSettings = () => {
+        setShowSettings(!showSettings);
+    };
+
+    return (
+        <GameStateProvider>
+            <GameContainer>
+                <BackgroundDisplay />
+                <StoryDisplay />
+                <ChoiceDisplay />
+                <SettingsButton onClick={toggleSettings}>
+                    设置
+                </SettingsButton>
+                {showSettings && <SettingsMenu onClose={toggleSettings} />}
+                {isLoading && <LoadingScreen progress={loadingProgress} />}
+                <NotificationUI />
+            </GameContainer>
+        </GameStateProvider>
+    );
+};
+
+export default Game; 

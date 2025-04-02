@@ -1,21 +1,39 @@
 import React, { useState, useEffect, useRef } from 'react';
 import styled from 'styled-components';
 import { useGameState } from '../contexts/GameStateContext';
-import { useAudio } from '../hooks/useAudio';
+import theme from '../styles/theme';
 
 const StoryContainer = styled.div`
     position: absolute;
-    bottom: ${({ theme }) => theme.spacing.large};
+    bottom: ${theme.spacing.large};
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
     max-width: 800px;
     background: rgba(0, 0, 0, 0.8);
-    padding: ${({ theme }) => theme.spacing.medium};
-    border-radius: ${({ theme }) => theme.borderRadius.medium};
-    color: ${({ theme }) => theme.colors.text};
-    font-family: ${({ theme }) => theme.fonts.pixel};
-    z-index: ${({ theme }) => theme.zIndex.content};
+    padding: ${theme.spacing.medium};
+    border-radius: ${theme.borderRadius.medium};
+    color: ${theme.colors.text};
+    font-family: ${theme.fonts.system};
+    z-index: ${theme.zIndex.ui};
+    display: flex;
+`;
+
+const PortraitContainer = styled.div`
+    width: 100px;
+    height: 100px;
+    min-width: 100px;
+    margin-right: ${theme.spacing.medium};
+    border-radius: ${theme.borderRadius.small};
+    overflow: hidden;
+    background-color: rgba(0, 0, 0, 0.3);
+    display: ${({ $hasPortrait }) => ($hasPortrait ? 'block' : 'none')};
+`;
+
+const Portrait = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 `;
 
 const TextContainer = styled.div`
@@ -23,50 +41,55 @@ const TextContainer = styled.div`
     min-height: 100px;
     line-height: 1.6;
     white-space: pre-wrap;
-    margin-bottom: ${({ theme }) => theme.spacing.medium};
+    margin-bottom: ${theme.spacing.medium};
+    flex: 1;
 `;
 
 const TypewriterText = styled.span`
     display: inline;
     opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
-    color: ${({ $color, theme }) => $color || theme.colors.text};
+    color: ${({ $color }) => $color || theme.colors.text};
     font-style: ${({ $italic }) => ($italic ? 'italic' : 'normal')};
     font-weight: ${({ $bold }) => ($bold ? 'bold' : 'normal')};
     text-decoration: ${({ $underline }) => ($underline ? 'underline' : 'none')};
-    transition: color ${({ theme }) => theme.transitions.fast};
+    transition: color ${theme.transitions.fast};
 `;
 
 const ContinuePrompt = styled.div`
     position: absolute;
-    bottom: ${({ theme }) => theme.spacing.small};
-    right: ${({ theme }) => theme.spacing.small};
+    bottom: ${theme.spacing.small};
+    right: ${theme.spacing.small};
     font-size: 0.8em;
     opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
-    animation: blink ${({ theme }) => theme.transitions.normal} infinite;
+    animation: blink 1s infinite;
+    
+    @keyframes blink {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0; }
+    }
 `;
 
 const StoryDisplay = () => {
-    const { currentScene, settings } = useGameState();
-    const { playSound } = useAudio();
-    const [displayedText, setDisplayedText] = useState([]);
+    const { currentNode, goToNode } = useGameState();
+    const [displayedText, setDisplayedText] = useState('');
     const [isTyping, setIsTyping] = useState(false);
     const [showPrompt, setShowPrompt] = useState(false);
     const textRef = useRef(null);
     const timeoutRef = useRef(null);
 
-    const typeSpeed = settings?.textSpeed || 30;
+    // 默认打字速度（毫秒/字符）
+    const typeSpeed = 30;
 
     useEffect(() => {
-        if (!currentScene?.text) return;
+        if (!currentNode?.text) return;
 
         setIsTyping(true);
         setShowPrompt(false);
-        setDisplayedText([]);
+        setDisplayedText('');
 
-        const text = currentScene.text;
-        const styles = currentScene.textStyles || [];
+        const text = currentNode.text;
         let currentIndex = 0;
-        let currentTextParts = [];
+        let currentText = '';
 
         const typeNextCharacter = () => {
             if (currentIndex >= text.length) {
@@ -75,28 +98,9 @@ const StoryDisplay = () => {
                 return;
             }
 
-            // 查找当前字符的样式
-            const activeStyles = styles.filter(style => 
-                currentIndex >= style.start && currentIndex <= style.end
-            );
-
-            // 创建新的文本部分
-            const char = text[currentIndex];
-            currentTextParts.push({
-                char,
-                styles: activeStyles.reduce((acc, style) => ({
-                    ...acc,
-                    [style.type]: true,
-                    color: style.color || acc.color
-                }), {})
-            });
-
-            setDisplayedText([...currentTextParts]);
-
-            // 播放打字音效
-            if (char !== ' ' && settings?.soundEnabled) {
-                playSound('typing');
-            }
+            // 添加下一个字符
+            currentText += text[currentIndex];
+            setDisplayedText(currentText);
 
             currentIndex++;
             timeoutRef.current = setTimeout(typeNextCharacter, typeSpeed);
@@ -109,7 +113,7 @@ const StoryDisplay = () => {
                 clearTimeout(timeoutRef.current);
             }
         };
-    }, [currentScene, typeSpeed, settings?.soundEnabled]);
+    }, [currentNode]);
 
     const handleClick = () => {
         if (isTyping) {
@@ -118,44 +122,30 @@ const StoryDisplay = () => {
                 clearTimeout(timeoutRef.current);
             }
             
-            const text = currentScene.text;
-            const styles = currentScene.textStyles || [];
-            const allTextParts = text.split('').map((char, index) => ({
-                char,
-                styles: styles
-                    .filter(style => index >= style.start && index <= style.end)
-                    .reduce((acc, style) => ({
-                        ...acc,
-                        [style.type]: true,
-                        color: style.color || acc.color
-                    }), {})
-            }));
-
-            setDisplayedText(allTextParts);
+            setDisplayedText(currentNode.text);
             setIsTyping(false);
             setShowPrompt(true);
+        } else if (showPrompt) {
+            // 如果文字已经显示完毕且显示了提示，点击进入下一个节点
+            if (currentNode.nextNodeId) {
+                goToNode(currentNode.nextNodeId);
+            }
         }
     };
 
+    if (!currentNode) return null;
+
     return (
         <StoryContainer onClick={handleClick}>
+            <PortraitContainer $hasPortrait={!!currentNode.portrait}>
+                {currentNode.portrait && <Portrait src={currentNode.portrait} alt="Character" />}
+            </PortraitContainer>
             <TextContainer ref={textRef}>
-                {displayedText.map((part, index) => (
-                    <TypewriterText
-                        key={index}
-                        $isVisible={true}
-                        $color={part.styles.color}
-                        $bold={part.styles.bold}
-                        $italic={part.styles.italic}
-                        $underline={part.styles.underline}
-                    >
-                        {part.char}
-                    </TypewriterText>
-                ))}
+                {displayedText}
+                <ContinuePrompt $isVisible={showPrompt && !isTyping}>
+                    点击继续...
+                </ContinuePrompt>
             </TextContainer>
-            <ContinuePrompt $isVisible={showPrompt && !isTyping}>
-                Click to continue...
-            </ContinuePrompt>
         </StoryContainer>
     );
 };

@@ -1,42 +1,43 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useGameState } from '../contexts/GameStateContext';
-import { useAudio } from '../hooks/useAudio';
+import theme from '../styles/theme';
 
 const ChoicesContainer = styled.div`
     position: absolute;
-    bottom: ${({ theme }) => theme.spacing.xlarge};
+    bottom: 180px;
     left: 50%;
     transform: translateX(-50%);
     width: 90%;
     max-width: 600px;
     display: flex;
     flex-direction: column;
-    gap: ${({ theme }) => theme.spacing.small};
-    z-index: ${({ theme }) => theme.zIndex.overlay};
+    gap: ${theme.spacing.small};
+    z-index: ${theme.zIndex.ui + 1};
     opacity: ${({ $isVisible }) => ($isVisible ? 1 : 0)};
     transform: ${({ $isVisible }) => 
         $isVisible 
             ? 'translateX(-50%) translateY(0)' 
             : 'translateX(-50%) translateY(20px)'
     };
-    transition: all ${({ theme }) => theme.transitions.normal};
+    transition: all ${theme.transitions.normal};
 `;
 
 const Choice = styled.button`
     background: rgba(0, 0, 0, 0.8);
-    color: ${({ theme, $isSelected }) => 
+    color: ${({ $isSelected }) => 
         $isSelected ? theme.colors.primary : theme.colors.text};
-    padding: ${({ theme }) => theme.spacing.medium};
-    border-radius: ${({ theme }) => theme.borderRadius.medium};
-    font-family: ${({ theme }) => theme.fonts.pixel};
+    padding: ${theme.spacing.medium};
+    border-radius: ${theme.borderRadius.medium};
+    font-family: ${theme.fonts.system};
     text-align: left;
-    transition: all ${({ theme }) => theme.transitions.fast};
+    transition: all ${theme.transitions.fast};
     border: 1px solid transparent;
+    cursor: pointer;
     
     &:hover:not(:disabled) {
-        border-color: ${({ theme }) => theme.colors.primary};
-        color: ${({ theme }) => theme.colors.primary};
+        border-color: ${theme.colors.primary};
+        color: ${theme.colors.primary};
         transform: translateX(10px);
     }
     
@@ -47,66 +48,59 @@ const Choice = styled.button`
 
     &:before {
         content: '▶';
-        margin-right: ${({ theme }) => theme.spacing.small};
+        margin-right: ${theme.spacing.small};
         opacity: ${({ $isSelected }) => ($isSelected ? 1 : 0)};
-        transition: opacity ${({ theme }) => theme.transitions.fast};
+        transition: opacity ${theme.transitions.fast};
     }
 `;
 
 const ChoiceDisplay = () => {
-    const { currentScene, gameFlags, handleChoice } = useGameState();
-    const { playSound } = useAudio();
+    const { currentNode, flags, handleChoiceSelected } = useGameState();
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const [isVisible, setIsVisible] = useState(false);
 
     useEffect(() => {
-        if (currentScene?.choices) {
+        if (currentNode?.choices) {
             setSelectedIndex(-1);
             // 添加短暂延迟以确保动画效果
             setTimeout(() => setIsVisible(true), 100);
         } else {
             setIsVisible(false);
         }
-    }, [currentScene]);
+    }, [currentNode]);
 
     const isChoiceAvailable = (choice) => {
-        if (!choice.condition) return true;
+        if (!choice.conditionFlags) return true;
         
         // 检查条件是否满足
-        const [type, value] = choice.condition.split(':');
-        
-        if (type === 'flag') {
-            return gameFlags[value];
-        }
-        
-        return true;
+        return choice.conditionFlags.every(condition => {
+            const { flag, value } = condition;
+            return flags[flag] === value;
+        });
     };
 
     const handleChoiceClick = (choice, index) => {
         setSelectedIndex(index);
-        playSound('select');
 
         // 添加短暂延迟以显示选择效果
         setTimeout(() => {
-            handleChoice(choice);
+            handleChoiceSelected(choice);
             setIsVisible(false);
         }, 300);
     };
 
     const handleKeyDown = (event) => {
-        if (!currentScene?.choices || !isVisible) return;
+        if (!currentNode?.choices || !isVisible) return;
 
-        const availableChoices = currentScene.choices.filter(isChoiceAvailable);
+        const availableChoices = currentNode.choices.filter(isChoiceAvailable);
         
         switch (event.key) {
             case 'ArrowUp':
-                playSound('navigate');
                 setSelectedIndex(prev => 
                     prev <= 0 ? availableChoices.length - 1 : prev - 1
                 );
                 break;
             case 'ArrowDown':
-                playSound('navigate');
                 setSelectedIndex(prev => 
                     prev >= availableChoices.length - 1 ? 0 : prev + 1
                 );
@@ -124,13 +118,13 @@ const ChoiceDisplay = () => {
     useEffect(() => {
         window.addEventListener('keydown', handleKeyDown);
         return () => window.removeEventListener('keydown', handleKeyDown);
-    }, [currentScene, selectedIndex, isVisible]);
+    }, [currentNode, selectedIndex, isVisible]);
 
-    if (!currentScene?.choices) return null;
+    if (!currentNode?.choices) return null;
 
     return (
         <ChoicesContainer $isVisible={isVisible}>
-            {currentScene.choices.map((choice, index) => {
+            {currentNode.choices.map((choice, index) => {
                 const isAvailable = isChoiceAvailable(choice);
                 return (
                     <Choice

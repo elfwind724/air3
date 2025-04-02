@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
-import { useAudioManager } from '../hooks/useAudioManager';
-import { theme } from '../styles/theme';
+import theme from '../styles/theme';
 
 const SettingsContainer = styled.div`
     position: fixed;
@@ -88,17 +87,6 @@ const CloseButton = styled.button`
 `;
 
 const SettingsMenu = ({ onClose }) => {
-    const { 
-        musicVolume, 
-        setMusicVolume, 
-        sfxVolume, 
-        setSfxVolume,
-        musicEnabled,
-        setMusicEnabled,
-        sfxEnabled,
-        setSfxEnabled
-    } = useAudioManager();
-
     const [textSpeed, setTextSpeed] = useState(() => {
         return parseInt(localStorage.getItem('textSpeed') || '50');
     });
@@ -134,50 +122,6 @@ const SettingsMenu = ({ onClose }) => {
     return (
         <SettingsContainer>
             <CloseButton onClick={onClose}>&times;</CloseButton>
-            
-            <SettingRow>
-                <Label>音乐开关</Label>
-                <Toggle 
-                    $active={musicEnabled}
-                    onClick={() => setMusicEnabled(!musicEnabled)}
-                >
-                    {musicEnabled ? '开' : '关'}
-                </Toggle>
-            </SettingRow>
-
-            <SettingRow>
-                <Label>音乐音量</Label>
-                <Slider
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={musicVolume * 100}
-                    onChange={(e) => setMusicVolume(e.target.value / 100)}
-                    disabled={!musicEnabled}
-                />
-            </SettingRow>
-
-            <SettingRow>
-                <Label>音效开关</Label>
-                <Toggle 
-                    $active={sfxEnabled}
-                    onClick={() => setSfxEnabled(!sfxEnabled)}
-                >
-                    {sfxEnabled ? '开' : '关'}
-                </Toggle>
-            </SettingRow>
-
-            <SettingRow>
-                <Label>音效音量</Label>
-                <Slider
-                    type="range"
-                    min="0"
-                    max="100"
-                    value={sfxVolume * 100}
-                    onChange={(e) => setSfxVolume(e.target.value / 100)}
-                    disabled={!sfxEnabled}
-                />
-            </SettingRow>
 
             <SettingRow>
                 <Label>文字速度</Label>
