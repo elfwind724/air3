@@ -31,26 +31,14 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    assetsDir: '',
-    assetsInlineLimit: 10240,
-    sourcemap: true,
+    emptyOutDir: true,
+    minify: true,
     rollupOptions: {
       output: {
-        manualChunks: (id) => {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('scheduler')) {
-              return 'vendor-react';
-            }
-            if (id.includes('styled-components')) {
-              return 'vendor-styles';
-            }
-            return 'vendor';
-          }
-        },
-        assetFileNames: 'assets/[name][extname]',
+        entryFileNames: 'assets/[name].js',
         chunkFileNames: 'assets/[name].js',
-        entryFileNames: 'assets/[name].js'
-      },
-    },
+        assetFileNames: 'assets/[name].[ext]'
+      }
+    }
   }
 })
